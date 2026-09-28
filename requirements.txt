@@ -8,3 +8,9 @@ requests>=2.31
 # curl_cffi>=0.5     # scraping TLS impersonate
 # yfinance>=0.2      # data finansial
 curl_cffi>=0.5
+
+# opsional — hanya untuk eksperimen transformer (UPGRADE_FINDINGS.md):
+# pip install torch transformers scikit-learn
+# torch>=2.0
+# transformers>=4.40
+# scikit-learn>=1.3

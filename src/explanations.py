@@ -28,7 +28,8 @@ EXPLAIN: dict[str, dict] = {
         "dampak": "Bila mayoritas netral (faktual), berarti diskusi teknologis "
                   "cenderung pragmatis, bukan emosional — memengaruhi cara "
                   "membaca temuan lain. Bila negatif dominan, ada isu yang "
-                  "harus diselidiki.",
+                  "harus diselidiki. Kelas 'unknown' (leksikon v2) menandai "
+                  "komentar tanpa kata bernada — jujur dipisah dari 'netral'.",
         "baca": "Batang = % komentar per kelas sentimen; label memuat jumlah (n).",
     },
     "trend": {
@@ -84,6 +85,33 @@ EXPLAIN: dict[str, dict] = {
         "dampak": "Bila contoh tampak keliru, kesimpulan angka perlu diperlakukan "
                   "hati-hati — transparansi ini menjaga kredibilitas analisis.",
         "baca": "Diambil dari komentar dengan skor paling positif & paling negatif.",
+    },
+    "sarcasm": {
+        "judul": "Sarkasme Terdeteksi (aturan eksplisit)",
+        "kenapa": "Sarkasme adalah kelemahan klasik analisis leksikon. Leksikon v2 "
+                  "menambahkan aturan deterministik untuk menangkap penanda "
+                  "eksplisit — tanpa model transformer.",
+        "tujuan": "Menunjukkan berapa komentar yang polaritasnya dibalik oleh "
+                  "aturan sarkasme, dan seberapa andal aturan itu.",
+        "dampak": "Angka kecil mencerminkan kejujuran: sarkasme eksplisit memang "
+                  "jarang berbentuk frasa yang bisa ditangkap aturan. Sarkasme "
+                  "implisit tetap luput — batas yang diakui terbuka.",
+        "baca": "Setiap baris = komentar dengan penanda sarkasme (frasa/pembuka) "
+                "yang membalik skor leksikon.",
+    },
+    "method": {
+        "judul": "Perbandingan Metode (Leksikon vs Transformer)",
+        "kenapa": "Klaim 'transformer berat' perlu diuji, bukan diasumsikan. "
+                  "Eksperimen penuh membandingkan leksikon v1, v2, dan "
+                  "DistilBERT kecil pada holdout yang sama.",
+        "tujuan": "Menjawab secara terukur: apakah transformer kecil layak, dan "
+                  "apakah leksikon 'cukup'.",
+        "dampak": "Hasilnya TIDAK konklusif secara sengaja: leksikon v2 unggul "
+                  "angka terhadap label buatannya sendiri (sirkular), sementara "
+                  "transformer menangkap konteks yang leksikon lewatkan. "
+                  "Kesimpulan jujur: keduanya komplementer.",
+        "baca": "Baca catatan di bawah tabel — angka tinggi bisa menipu bila "
+                "gold set dibuat oleh metode yang diuji.",
     },
     "top_tables": {
         "judul": "Tabel Sentimen per Topik & Bulan",

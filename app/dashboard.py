@@ -1,7 +1,11 @@
 """
-AI Sentiment Intelligence — Interactive Dashboard
-=================================================
+AI Sentiment Intelligence — Interactive Dashboard (v2)
+=====================================================
 Analisis sentimen publik (Hacker News) terhadap AI/LLM.
+
+Leksikon v2: negasi + intensifier + konjungsi kontras + aturan sarkasme
+deterministik. Kelas 'unknown' (tanpa kata bernada) DIPISAH dari 'netral'
+agar klaim distribusi jujur. Lihat UPGRADE_FINDINGS.md.
 
 Jalankan: streamlit run app/dashboard.py
 """
@@ -10,7 +14,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -20,17 +23,18 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 import analysis as A                          # noqa: E402
 import explanations as X                      # noqa: E402
-from config import DATA_PROC, COLORS as C     # noqa: E402
+from config import COLORS as C                 # noqa: E402
 
-SENT_COLORS = {"positive": "#1F5C3D", "neutral": "#8B9AA6", "negative": "#C0392B"}
+SENT_COLORS = {"positive": "#1F5C3D", "neutral": "#8B9AA6",
+               "unknown": "#6A4C93", "negative": "#C0392B"}
 
 st.set_page_config(page_title="AI Sentiment Intelligence", page_icon="💬",
                    layout="wide", initial_sidebar_state="expanded")
 
 
-@st.cache_data(show_spinner="Memuat & menganalisis sentimen...")
+@st.cache_data(show_spinner="Memuat & menganalisis sentimen (leksikon v2)...")
 def load():
-    return A.load()
+    return A.load_v2()
 
 
 def style(fig, h=430):
@@ -48,7 +52,7 @@ def style(fig, h=430):
 def kpi(col, label, value, sub, color):
     col.markdown(
         f"""<div style="background:#1A1F2B;border-left:4px solid {color};
-        padding:14px 16px;border-radius:10px;height:112px;">
+        padding:14px 16px;border-radius:10px;height:118px;">
         <div style="color:#9AA7B4;font-size:.76rem;text-transform:uppercase;
         letter-spacing:.06em;">{label}</div>
         <div style="color:{color};font-size:1.7rem;font-weight:700;
@@ -58,19 +62,21 @@ def kpi(col, label, value, sub, color):
 
 
 df = load()
-ins = A.key_insights(df)
 
 # ---- sidebar -------------------------------------------------------------
 st.sidebar.markdown("### 🎛️ Filters")
 topics = sorted({t for ts in df["topics"] for t in ts.split(", ")})
 sel_topics = st.sidebar.multiselect("Topik", topics, default=topics)
-sents = ["positive", "neutral", "negative"]
+sents = [s for s in ["positive", "neutral", "unknown", "negative"]
+         if s in set(df["sentiment"])]
 sel_sent = st.sidebar.multiselect("Sentimen", sents, default=sents)
 min_words = st.sidebar.slider("Min. jumlah kata", 0, 60, 0, step=5)
 st.sidebar.markdown("---")
-st.sidebar.caption("Sumber: Hacker News (Algolia API, publik). "
-                   "Sentimen = leksikon internal (tanpa API berbayar); "
-                   "tidak menangkap sarkasme — lihat keterbatasan.")
+st.sidebar.caption(
+    "Sumber: Hacker News (Algolia API, publik). Sentimen = **leksikon v2** "
+    "(negasi, intensifier, kontras, aturan sarkasme eksplisit). Kelas "
+    "'unknown' = tanpa kata bernada (jujur dipisah dari 'netral'). "
+    "Sarkasme implisit & konteks rumit tetap jadi batas — lihat findings.")
 
 # ---- filter --------------------------------------------------------------
 d = df.copy()
@@ -88,24 +94,25 @@ st.markdown(
     💬 AI Sentiment Intelligence</div>
     <div style="color:#D7E4DC;font-size:.9rem;margin-top:4px;">
     What the tech community really thinks about AI/LLM · Hacker News ·
-    by <b>Sandi Ridwan</b></div></div>""",
+    by <b>Sandi Ridwan</b> · <i>leksikon v2</i></div></div>""",
     unsafe_allow_html=True)
 
 # ---- KPI -----------------------------------------------------------------
 X.render("kpi", st=st)
 k1, k2, k3, k4, k5 = st.columns(5)
-ov = A.sentiment_overview(d) if len(d) else None
 kpi(k1, "Komentar", f"{len(d):,}", f"dari {len(df):,}", C["primary"])
 kpi(k2, "Positif", f"{(d['sentiment']=='positive').mean()*100:.0f}%",
     "komentar positif", C["primary"])
 kpi(k3, "Netral", f"{(d['sentiment']=='neutral').mean()*100:.0f}%",
-    "faktual/netral", C["grey"])
-kpi(k4, "Negatif", f"{(d['sentiment']=='negative').mean()*100:.0f}%",
+    "berimbang (ada kata bernada)", C["grey"])
+kpi(k4, "Unknown", f"{(d['sentiment']=='unknown').mean()*100:.0f}%",
+    "tanpa kata bernada (buta)", C["purple"])
+kpi(k5, "Negatif", f"{(d['sentiment']=='negative').mean()*100:.0f}%",
     "komentar negatif", C["red"])
-kpi(k5, "Median skor", f"{d['sent_score'].median():+.2f}", "−1 … +1", C["blue"])
 st.write("")
 
-t1, t2, t3 = st.tabs(["📊 Overview", "🗂️ Topics & Words", "📈 Trend"])
+t1, t2, t3, t4 = st.tabs(["📊 Overview", "🗂️ Topics & Words",
+                          "📈 Trend", "🔬 Metodologi & Sarkasme"])
 
 with t1:
     X.render("overview", st=st)
@@ -118,7 +125,7 @@ with t1:
                      text="komentar")
         fig.update_traces(texttemplate="n=%{text}", textposition="outside")
         style(fig, 400).update_layout(showlegend=False,
-                                      title="Distribusi Sentimen",
+                                      title="Distribusi Sentimen (v2)",
                                       yaxis_title="%")
         st.plotly_chart(fig, use_container_width=True)
     with c2:
@@ -183,10 +190,38 @@ with t3:
         for r in ex["negatif"].itertuples():
             st.caption(f"[{r.sent_score:+.2f}] {r.text[:220]}…")
 
+with t4:
+    X.render("sarcasm", st=st)
+    sar = d[d["sar_kind"].notna()] if "sar_kind" in d else d.iloc[0:0]
+    st.metric("Sarkasme terdeteksi (aturan eksplisit)",
+              f"{len(sar)} komentar",
+              f"{100*len(sar)/max(len(d),1):.2f}% dari data terfilter")
+    if len(sar):
+        with st.expander("Lihat komentar yang dibalik polaritasnya", expanded=False):
+            for r in sar.head(15).itertuples():
+                st.caption(f"[{r.sar_kind}] → {r.sentiment} · {r.text[:200]}…")
+
+    st.markdown("---")
+    X.render("method", st=st)
+    cmp_path = ROOT / "reports" / "tables" / "method_comparison.csv"
+    if cmp_path.exists():
+        st.dataframe(pd.read_csv(cmp_path), use_container_width=True,
+                     hide_index=True)
+        st.caption(
+            "⚠️ Gold set = label **silver** dari leksikon v2 → angka leksikon "
+            "v2 di sini **sirkular** (mengukur kesesuaian diri sendiri, bukan "
+            "kebenaran absolut). Pada 32% holdout, transformer membangkang "
+            "label silver — dan pada sebagian kasus transformer **lebih benar**. "
+            "Lihat `UPGRADE_FINDINGS.md` §3.")
+    else:
+        st.info("Tabel perbandingan belum tersedia — jalankan "
+                "`python src/evaluate_methods.py`.")
+
 st.markdown(
     f"""<hr style="border-color:#2A3038;">
     <div style="color:{C['grey']};font-size:.8rem;text-align:center;">
     💬 AI Sentiment Intelligence · sumber: Hacker News (Algolia API) ·
-    sentimen leksikon internal · oleh <b>Sandi Ridwan</b><br>
-    ⚠️ Leksikon tidak memahami sarkasme/konteks rumit. Analisis edukasional.</div>""",
+    leksikon v2 · oleh <b>Sandi Ridwan</b><br>
+    ⚠️ Sarkasme hanya tertangkap sebagian (aturan eksplisit); konteks rumit
+    & sarkasme implisit tetap batas terbuka. Analisis edukasional.</div>""",
     unsafe_allow_html=True)

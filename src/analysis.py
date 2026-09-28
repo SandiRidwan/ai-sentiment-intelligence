@@ -163,7 +163,10 @@ def sentiment_overview(df: pd.DataFrame) -> pd.DataFrame:
     """Distribusi sentimen keseluruhan."""
     vc = df["sentiment"].value_counts()
     out = pd.DataFrame({"komentar": vc, "persen": (vc / len(df) * 100).round(1)})
-    return out.reindex(["positive", "neutral", "negative"])
+    # urutan tetap; 'unknown' hanya muncul bila ada (v2)
+    order = [c for c in ["positive", "neutral", "unknown", "negative"]
+             if c in out.index]
+    return out.reindex(order)
 
 
 def sentiment_by_topic(df: pd.DataFrame) -> pd.DataFrame:
@@ -259,3 +262,48 @@ if __name__ == "__main__":
     print(sentiment_trend(df).tail(6).to_string(index=False))
     print("\n[Kata teratas]")
     print(top_terms(df, 12).to_string(index=False))
+
+
+# ---------------------------------------------------------------------------
+# LOAD v2 — leksikon generasi 2 (kelas 'unknown' terpisah + sarkasme)
+# ---------------------------------------------------------------------------
+def load_v2() -> pd.DataFrame:
+    """
+    Sama seperti load(), tetapi memakai leksikon v2 (lexicon_v2.py):
+      · kelas 'unknown' dipisah dari 'neutral' (jujur: leksikon buta)
+      · deteksi sarkasme deterministik
+    Kolom tambahan: sent_score (dari v2), sentiment (incl. 'unknown'),
+    sar_kind, unknown (bool).
+    """
+    from lexicon_v2 import score_v2  # import lokal agar tak wajib di v1
+
+    if not RAW_FILE.exists():
+        raise FileNotFoundError(
+            f"{RAW_FILE} tidak ada. Jalankan dulu: python src/collect_sentiment.py")
+    df = pd.read_csv(RAW_FILE)
+    n0 = len(df)
+    df = df.drop_duplicates(subset=["id"]).copy()
+    df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce", utc=True)
+    df = df.dropna(subset=["created_at"])
+
+    res = df["text"].fillna("").map(score_v2)
+    df["sent_score"] = [r["skor"] for r in res]
+    df["sentiment"] = [r["kelas"] for r in res]
+    df["sar_kind"] = [r["sar_kind"] for r in res]
+    df["payload_pos"] = [r["pos_hits"] for r in res]
+    df["payload_neg"] = [r["neg_hits"] for r in res]
+    df["unknown"] = df["sentiment"] == "unknown"
+    df["n_words"] = df["text"].str.split().str.len()
+
+    def tag_topics(t: str) -> str:
+        tl = t.lower()
+        hits = [k for k, kws in TOPIC_KEYWORDS.items()
+                if any(kw in tl for kw in kws)]
+        return ", ".join(hits) if hits else "Other"
+    df["topics"] = df["text"].fillna("").map(tag_topics)
+    df["date"] = df["created_at"].dt.date.astype(str)
+    df["month"] = df["created_at"].dt.to_period("M").astype(str)
+
+    print(f"[load_v2] {n0:,} komentar → {len(df):,} (unknown "
+          f"{df['unknown'].mean()*100:.1f}%)")
+    return df

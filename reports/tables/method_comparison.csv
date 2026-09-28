@@ -1,0 +1,5 @@
+metode,accuracy,macro_f1
+Leksikon v1 (baseline asli),0.832,0.833
+Leksikon v2 (diperluas + sarkasme),0.951,0.951
+"DistilBERT fine-tuned (66M, CPU)",0.682,0.681
+Baseline naif (selalu 'neutral'),0.364,0.178

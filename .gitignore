@@ -5,6 +5,9 @@ venv/
 .ipynb_checkpoints/
 reports/_*
 
+# Model transformer (255MB, tidak untuk git) — dihasilkan via train_transformer.py
+models/
+
 # Kredensial — JANGAN pernah commit
 .env
 *.key

@@ -8,7 +8,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10+-6A4C93?style=for-the-badge&logo=python&logoColor=white)
 ![pandas](https://img.shields.io/badge/pandas-2.0-150458?style=for-the-badge&logo=pandas&logoColor=white)
-![NLP](https://img.shields.io/badge/NLP-Lexicon_Sentiment-1F5C3D?style=for-the-badge)
+![NLP](https://img.shields.io/badge/NLP-Lexicon_v2_%2B_DistilBERT-1F5C3D?style=for-the-badge)
 ![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
 ![Plotly](https://img.shields.io/badge/Plotly-Interactive-3F4F75?style=for-the-badge&logo=plotly&logoColor=white)
 ![Data](https://img.shields.io/badge/Source-Hacker_News-FF6600?style=for-the-badge&logo=ycombinator&logoColor=white)
@@ -98,18 +98,53 @@ AI/LLM — sentimen keseluruhan, per topik, dan trennya.
 
 ## ⚡ Metodologi NLP (Jujur & Reproducible)
 
-**Sentimen leksikon internal** (bukan API berbayar):
-- skor = (kata positif − negatif) / total kata bernada, dengan **negasi** & **intensifier**
-- **Alasan tidak pakai transformer:** model besar butuh unduhan/GPU → berat untuk
-  portofolio yang harus mudah direproduksi siapa pun.
+**Sentimen leksikon internal v2** (`lexicon_v2.py`, bukan API berbayar):
+- skor = (kata positif − negatif) / total kata bernada, dengan **negasi**,
+  **intensifier**, dan **konjungsi kontras** ("but" → klausa sesudah dibobot 1.8×)
+- **Kelas `unknown` dipisah dari `neutral`** — komentar tanpa kata bernada
+  tidak lagi disamarkan sebagai "netral"
+- **Lapisan sarkasme deterministik** (frasa + pembuka) — menangkap sebagian
+  sarkasme **tanpa transformer**
+- Kecepatan: ~4.300 komentar/detik (CPU, 1 thread)
+
+**Kenapa leksikon jadi basis (bukan karena transformer "mustahil ringan"):**
+DistilBERT kecil (66M, ~270MB) **bisa** jalan di CPU tanpa GPU dan tetap
+reproducible bila di-pin. Alasan memilih leksikon di sini adalah **keputusan
+lingkup**: leksikon ~1000× lebih cepat, tanpa unduhan, dan setiap skor bisa
+diaudit kata-per-kata. Ini pilihan, bukan keterbatasan teknis.
 
 **Keterbatasan yang diakui terbuka:**
-1. Leksikon **tidak memahami sarkasme** & konteks rumit
+1. Leksikon **tidak memahami sarkasme** & konteks rumit secara penuh
+   (aturan hanya menangkap penanda eksplisit)
 2. Domain teknologi punya jargon (mis. "bias" bisa teknis atau sosial)
 3. Hacker News = komunitas tech (bukan sampel populasi umum)
 
 > Sampel komentar paling positif/negatif disediakan di dashboard agar pembaca
 > dapat **memverifikasi kualitas** skor — bukan hanya menerima angka.
+
+### Eksperimen upgrade: leksikon vs transformer (terukur)
+
+Project ini **tidak berhenti pada klaim** "transformer berat". Sebuah
+eksperimen penuh dijalankan (CPU, reproducible) membandingkan tiga metode pada
+holdout yang sama — **termasuk hasil yang tidak nyaman**. Lihat
+[`UPGRADE_FINDINGS.md`](UPGRADE_FINDINGS.md).
+
+| Metode | accuracy* | macro-F1* | kecepatan |
+|---|---:|---:|---:|
+| Leksikon v1 | 0.832 | 0.833 | ~4000/detik |
+| **Leksikon v2** | **0.951** | **0.951** | ~4300/detik |
+| DistilBERT (66M, fine-tuned) | 0.682 | 0.681 | ~5/detik |
+| Baseline naif | 0.364 | 0.178 | — |
+
+<small>*gold = label silver leksikon v2 → **sirkular**; mengukur kesesuaian,
+bukan kebenaran absolut. Pada 32% holdout transformer membangkang label
+silver, dan pada sebagian kasus transformer **lebih benar** (mis. kalimat
+kritis yang ditandai "positif" oleh leksikon karena satu kata "better").
+Lihat §3 di findings.</small>
+
+> **Kesimpulan jujur:** leksikon v2 lebih cepat & auditable; transformer
+> menangkap konteks yang leksikon lewatkan. Keduanya **komplementer**, dan
+> tanpa label manusia kita **tidak boleh** mengklaim salah satu lebih akurat.
 
 ---
 
@@ -216,8 +251,10 @@ Narasi tersimpan di `src/explanations.py` (dapat diaudit).
 
 ## ⚠️ Disclaimer
 
-Analisis edukasional. Sentimen dihitung dengan leksikon sederhana (bukan model
-transformer) dan hanya mewakili komunitas Hacker News. Bukan saran bisnis/investasi.
+Analisis edukasional. Sentimen dihitung dengan leksikon v2 (negasi, intensifier,
+kontras, aturan sarkasme eksplisit) sebagai basis, dengan eksperimen pembanding
+DistilBERT kecil terdokumentasi di `UPGRADE_FINDINGS.md`. Hanya mewakili
+komunitas Hacker News. Bukan saran bisnis/investasi.
 
 ---
 
