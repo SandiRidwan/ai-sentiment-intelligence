@@ -1,0 +1,7 @@
+,topik,komentar,sent_median,sent_mean,negatif_pct,positif_pct
+0,Business,1997,0.0,0.126,23.4,38.2
+1,Ethics & Risk,750,0.0,-0.137,47.1,32.7
+2,Jobs,862,0.0,0.173,25.1,47.9
+3,Models,5759,0.0,0.191,20.4,42.5
+4,Other,1388,0.0,0.146,18.2,34.3
+5,Tools & Dev,3407,0.0,0.21,21.4,46.9

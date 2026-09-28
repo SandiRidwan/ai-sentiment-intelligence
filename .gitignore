@@ -1,0 +1,16 @@
+﻿__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+reports/_*
+
+# Kredensial — JANGAN pernah commit
+.env
+*.key
+*credentials*.json
+kunci.json
+*service_account*.json
+
+# Data mentah besar (bila > ~5MB, jangan commit; app butuh data kecil -> commit)
+# data/raw/*.csv
