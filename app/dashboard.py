@@ -25,6 +25,7 @@ import analysis as A                          # noqa: E402
 import explanations as X                      # noqa: E402
 import insights_content                        # noqa: E402,F401
 import insight as INS                          # noqa: E402
+import echarts_charts as EC                    # noqa: E402  (themeRiver, boxplot)
 from config import COLORS as C                 # noqa: E402
 
 SENT_COLORS = {"positive": "#1F5C3D", "neutral": "#8B9AA6",
@@ -184,6 +185,57 @@ with t3:
     style(fig, 460).update_layout(title="Tren Volume & Sentimen per Bulan")
     st.plotly_chart(fig, use_container_width=True)
     INS.box("trend", st=st)
+
+    st.markdown("#### Aliran topik sepanjang waktu (themeRiver ECharts)")
+    st.caption("ThemeRiver memperlihatkan **komposisi perhatian** — topik mana "
+               "yang menguat/melemah tiap bulan. Lebar pita = volume komentar "
+               "pada topik itu. Melengkapi tren sentimen di atas: bukan sekadar "
+               "'berapa banyak', tapi 'tentang apa'.")
+    try:
+        _tr = A.sentiment_trend(d)
+        _months = _tr["month"].astype(str).tolist()
+        _dc = "created_at" if "created_at" in d.columns else "date"
+        _topic_month = (d.assign(month=pd.to_datetime(d[_dc], errors="coerce")
+                                 .dt.to_period("M").astype(str))
+                        if _dc in d.columns else None)
+        if _topic_month is not None and len(_months):
+            _top_topics = (d["topics"].str.split(", ").explode()
+                           .value_counts().head(8).index.tolist())
+            # bangun matriks topik × bulan (jumlah komentar)
+            _series = []
+            for tp in _top_topics:
+                _mask = d["topics"].str.contains(tp, regex=False)
+                _cnt = (_topic_month[_mask]["month"]
+                        .value_counts().reindex(_months, fill_value=0))
+                _ser = {"name": tp,
+                        "data": [[i, int(_cnt.iloc[i])]
+                                 for i in range(len(_months))]}
+                if sum(v for _, v in _ser["data"]) > 0:
+                    _series.append(_ser)
+            if _series:
+                EC.theme_river(_months, _series,
+                               title="Aliran volume topik per bulan",
+                               height=460)
+    except Exception as _e:  # noqa: BLE001
+        st.caption(f"themeRiver tak tersedia pada data ini ({_e}).")
+    INS.box("topic", st=st)
+
+    st.markdown("#### Sebaran skor sentimen per topik (boxplot ECharts)")
+    st.caption("Boxplot menunjukkan **median + sebaran + outlier** skor tiap "
+               "topik. Topik dengan kotak lebar = opini terbelah; kotak sempit = "
+               "konsensus. Lebih jujur daripada rata-rata tunggal.")
+    try:
+        _tops = (d.groupby("topics")["sent_score"]
+                 .apply(list).sort_values(key=lambda s: s.map(len),
+                                          ascending=False).head(10))
+        EC.boxplot(
+            categories=[str(k)[:28] for k in _tops.index],
+            values=[list(v) for v in _tops.values],
+            title="Sebaran skor sentimen per topik",
+            yname="skor (−1…+1)", height=460)
+    except Exception as _e:  # noqa: BLE001
+        st.caption(f"boxplot tak tersedia pada data ini ({_e}).")
+    INS.box("topic", st=st)
 
     X.render("samples", st=st)
     ex = A.most_positive_negative(d, 3)
