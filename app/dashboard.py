@@ -23,6 +23,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 import analysis as A                          # noqa: E402
 import explanations as X                      # noqa: E402
+import insights_content                        # noqa: E402,F401
+import insight as INS                          # noqa: E402
 from config import COLORS as C                 # noqa: E402
 
 SENT_COLORS = {"positive": "#1F5C3D", "neutral": "#8B9AA6",
@@ -109,6 +111,7 @@ kpi(k4, "Unknown", f"{(d['sentiment']=='unknown').mean()*100:.0f}%",
     "tanpa kata bernada (buta)", C["purple"])
 kpi(k5, "Negatif", f"{(d['sentiment']=='negative').mean()*100:.0f}%",
     "komentar negatif", C["red"])
+INS.box("kpi", st=st)
 st.write("")
 
 t1, t2, t3, t4 = st.tabs(["📊 Overview", "🗂️ Topics & Words",
@@ -135,6 +138,7 @@ with t1:
         style(fig, 400).update_layout(title="Sebaran Skor Sentimen",
                                       xaxis_title="skor (−1…+1)")
         st.plotly_chart(fig, use_container_width=True)
+    INS.box("overview", st=st)
 
 with t2:
     X.render("topic", st=st)
@@ -146,6 +150,7 @@ with t2:
     style(fig, 420).update_layout(coloraxis_showscale=False,
                                   title="Sentimen per Topik")
     st.plotly_chart(fig, use_container_width=True)
+    INS.box("topic", st=st)
     with st.expander("📋 Tabel rincian per topik"):
         X.render("top_tables", st=st)
         st.dataframe(t, use_container_width=True, hide_index=True)
@@ -164,6 +169,7 @@ with t2:
                      color_discrete_sequence=[C["red"]])
         style(fig, 480).update_layout(title="Kata Teratas — NEGATIF")
         st.plotly_chart(fig, use_container_width=True)
+    INS.box("terms", st=st)
 
 with t3:
     X.render("trend", st=st)
@@ -177,6 +183,7 @@ with t3:
     fig.add_hline(y=0, line_dash="dash", line_color="#8B9AA6")
     style(fig, 460).update_layout(title="Tren Volume & Sentimen per Bulan")
     st.plotly_chart(fig, use_container_width=True)
+    INS.box("trend", st=st)
 
     X.render("samples", st=st)
     ex = A.most_positive_negative(d, 3)
@@ -200,6 +207,7 @@ with t4:
         with st.expander("Lihat komentar yang dibalik polaritasnya", expanded=False):
             for r in sar.head(15).itertuples():
                 st.caption(f"[{r.sar_kind}] → {r.sentiment} · {r.text[:200]}…")
+    INS.box("sarcasm", st=st)
 
     st.markdown("---")
     X.render("method", st=st)
