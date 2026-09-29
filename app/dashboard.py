@@ -218,7 +218,7 @@ with t3:
                                height=460)
     except Exception as _e:  # noqa: BLE001
         st.caption(f"themeRiver tak tersedia pada data ini ({_e}).")
-    INS.box("topic", st=st)
+    INS.box("echarts_theme_river", st=st)
 
     st.markdown("#### Sebaran skor sentimen per topik (boxplot ECharts)")
     st.caption("Boxplot menunjukkan **median + sebaran + outlier** skor tiap "
@@ -235,7 +235,7 @@ with t3:
             yname="skor (−1…+1)", height=460)
     except Exception as _e:  # noqa: BLE001
         st.caption(f"boxplot tak tersedia pada data ini ({_e}).")
-    INS.box("topic", st=st)
+    INS.box("echarts_boxplot", st=st)
 
     X.render("samples", st=st)
     ex = A.most_positive_negative(d, 3)

@@ -128,3 +128,52 @@ register(
         "berisiko salah membaca opini publik secara serius."),
     tingkat="tinggi",
 )
+
+
+# --------------------------------------------------------------------------
+# Chart ECharts (v2) — insight & rekomendasi.
+# --------------------------------------------------------------------------
+
+register(
+    "echarts_theme_river",
+    kesimpulan=(
+        "Theme River menunjukkan KOMPOSISI perhatian antar-topik sepanjang waktu, "
+        "bukan sekadar volume total. Pita yang melebar = topik yang menguat; "
+        "menyempit = meredup. Ini mengungkap pergeseran agenda komunitas — "
+        "mis. dari 'Models' ke 'Ethics & Risk' — yang tak terlihat pada garis "
+        "tren agregat."),
+    rekomendasi=[
+        "Pantau topik yang pitanya melebar cepat sebagai sinyal isu yang akan "
+        "naik; siapkan narasi/komunikasi lebih awal.",
+        "Bandingkan lebar pita dengan sentimen topik itu: volume naik + sentimen "
+        "negatif = potensi krisis reputasi.",
+        "Gunakan pergeseran komposisi untuk memutuskan prioritas konten/edukasi.",
+    ],
+    risiko=(
+        "Membaca hanya total volume menyembunyikan pergeseran tema. Organisasi "
+        "bisa bereaksi terlambat pada isu yang tumbuh, atau salah mengalokasikan "
+        "perhatian ke topik yang justru meredup."),
+    tingkat="tinggi",
+)
+
+register(
+    "echarts_boxplot",
+    kesimpulan=(
+        "Boxplot skor sentimen per topik memperlihatkan MEDIAN, SEBARAN, dan "
+        "PENCILAN opini tiap topik. Topik dengan kotak lebar = publik terbelah "
+        "(pro & kontra kuat); kotak sempit = konsensus. Median jauh dari skor 0 "
+        "menandakan topik itu umumnya positif/negatif, bukan cuma berisik."),
+    rekomendasi=[
+        "Prioritaskan topik dengan median negatif DAN sebaran lebar — di sana "
+        "risiko reputasi paling besar sekaligus ruang perbaikan.",
+        "Untuk topik 'terbelah', jangan pukul rata: pisahkan audiens pendukung "
+        "vs penentang, lalu sapa masing-masing.",
+        "Periksa pencilan (komentar ekstrem) secara manual — sering meme/sarkasme "
+        "yang lolos aturan leksikon.",
+    ],
+    risiko=(
+        "Mengandalkan rata-rata tunggal membuat topik terbelah tampak 'netral' "
+        "sehingga luput dari perhatian, padahal justru di situ gesekan opini "
+        "paling tajam. Analisis edukasional — bukan pengganti riset audiens."),
+    tingkat="sedang",
+)
